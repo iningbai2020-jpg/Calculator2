@@ -1,1 +1,139 @@
-# Calculator2
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>國際美學委任報價計算機</title>
+<style>
+:root{
+  --bg:#F5F5F7; --card:#FFFFFF; --text:#4A3E3E; --accent:#C2A38E; --soft:#E8DCD3;
+}
+body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial;color:var(--text);}
+.wrapper{max-width:420px;margin:40px auto;padding:0 16px;}
+.card{background:var(--card);border-radius:20px;padding:30px 26px 32px;box-shadow:0 16px 36px rgba(0,0,0,.08);}
+.brand{text-align:center;margin-bottom:12px;}
+.brand img{width:120px;animation:float 4.5s ease-in-out infinite;}
+@keyframes float{0%{transform:translateY(0);opacity:.85;}50%{transform:translateY(-6px);opacity:1;}100%{transform:translateY(0);opacity:.85;}}
+h1{text-align:center;font-size:1.25rem;margin-bottom:24px;}
+label{font-size:.82rem;display:block;margin-bottom:6px;}
+input,select{width:100%;padding:14px 16px;border-radius:14px;border:1px solid #ddd;margin-bottom:18px;}
+button{width:100%;padding:16px;border:none;border-radius:18px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;}
+.result{text-align:center;display:none;margin-top:26px;}
+.ntd{font-size:2.2rem;font-weight:700;}
+.usd{font-size:.9rem;opacity:.65;}
+.orderID{font-size:.85rem;margin-top:6px;}
+.disclaimer{margin-top:28px;font-size:.75rem;line-height:1.55;color:#7A6A6A;border-top:1px solid var(--soft);padding-top:14px;}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;}
+.modal-box{background:#fff;border-radius:18px;padding:22px 20px;max-width:300px;text-align:center;}
+.modal-box button{margin-top:12px;}
+</style>
+</head>
+
+<body>
+<div class="wrapper">
+<div class="card">
+<div class="brand"><img src="logo.png" alt="brand"></div>
+<h1>國際美學精品委任報價</h1>
+
+<label>客戶姓名</label>
+<input id="customer" placeholder="例：王小明">
+
+<label>商品名稱</label>
+<input id="item" placeholder="例：限定色奶茶杯">
+
+<label>海外採購參考金額（USD）</label>
+<input id="usd" type="number" placeholder="僅作國際價格參考">
+
+<label>採購來源（內部）</label>
+<select id="src">
+  <option value="official">官網 / 官方</option>
+  <option value="relative">親戚 / 熟人</option>
+  <option value="risk">非固定來源</option>
+</select>
+
+<label><input type="checkbox" id="agree"> 我已閱讀並同意不可取消與不退貨聲明</label>
+
+<button id="calcBtn">產生專屬報價</button>
+
+<div class="result" id="result">
+  <div class="ntd" id="ntd">NT$ 0</div>
+  <div class="usd" id="usdShow">USD 0</div>
+  <div class="orderID" id="orderID">報價單號：-</div>
+</div>
+
+<div class="disclaimer" id="disclaimer"></div>
+
+</div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-box">
+    ✨ 感謝您欣賞獨到的眼光<br>
+    期待為您提供專屬的美學委任服務
+    <button id="modalClose">確認</button>
+  </div>
+</div>
+
+<script>
+const CONFIG = {
+  exchangeRate: 33.5,
+  multiplier: { official:1.8, relative:1.95, risk:2.1 },
+  disclaimerText:`本服務屬「國際委任代訂與顧問勞務性質」，非一般商品買賣契約。一經確認委任即成立，不可取消或退貨。`
+};
+document.getElementById("disclaimer").innerHTML = CONFIG.disclaimerText;
+
+document.getElementById("calcBtn").addEventListener("click", ()=>{
+  if(!document.getElementById("agree").checked){ alert("請先同意不可取消與不退貨聲明"); return; }
+  const usd=parseFloat(document.getElementById("usd").value);
+  const customer=document.getElementById("customer").value.trim();
+  const item=document.getElementById("item").value.trim();
+  if(!usd || !customer || !item){ alert("請填寫完整資料"); return; }
+
+  const src=document.getElementById("src").value;
+  const ntd=Math.ceil(usd*CONFIG.exchangeRate*CONFIG.multiplier[src]);
+
+  const today=new Date();
+  const y=String(today.getFullYear()).slice(2);
+  const mth=String(today.getMonth()+1).padStart(2,'0');
+  const d=String(today.getDate()).padStart(2,'0');
+  const orderNum=Math.floor(Math.random()*99+1).toString().padStart(2,'0');
+  const orderID=`${y}${mth}${d}-WXM-P-${orderNum}`;
+
+  document.getElementById("ntd").innerText="NT$ "+ntd.toLocaleString();
+  document.getElementById("usdShow").innerText="USD "+usd.toLocaleString();
+  document.getElementById("orderID").innerText="報價單號："+orderID;
+  document.getElementById("result").style.display="block";
+
+  if(!sessionStorage.getItem("greeted")){
+    document.getElementById("modal").style.display="flex";
+    sessionStorage.setItem("greeted","1");
+  }
+
+  /* ===== Notion API 範例框架 =====
+  const notionToken="YOUR_NOTION_API_TOKEN";
+  const databaseId="YOUR_SUB_DATABASE_ID";
+  fetch("https://api.notion.com/v1/pages",{
+    method:"POST",
+    headers:{
+      "Authorization":`Bearer ${notionToken}`,
+      "Content-Type":"application/json",
+      "Notion-Version":"2022-06-28"
+    },
+    body:JSON.stringify({
+      parent:{database_id:databaseId},
+      properties:{
+        "客戶訂單編號":{title:[{text:{content:orderID}}]},
+        "客戶姓名":{rich_text:[{text:{content:customer}}]},
+        "商品名稱":{rich_text:[{text:{content:item}}]},
+        "USD":{number:usd},
+        "NTD":{number:ntd}
+      }
+    })
+  });
+  */
+});
+
+document.getElementById("modalClose").addEventListener("click",()=>{document.getElementById("modal").style.display="none";});
+</script>
+</body>
+</html>
